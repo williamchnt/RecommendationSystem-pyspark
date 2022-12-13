@@ -82,4 +82,110 @@ def read_movies_data(data):
     df=spark.read.option("header",True).csv(f"dbfs:/FileStore/shared_uploads/mohamed.zenati@securitasdirect.fr/{data}.csv")
     return df
     
-display(read_movies_data("movies_metadata"))
+display(read_movies_data("keywords"))
+df_keywords = read_movies_data("keywords")
+df_keywords.show()
+
+# COMMAND ----------
+
+from pyspark.sql.types import IntegerType
+# df_keywords.describe()
+df_keywords = df_keywords.withColumn("id", df_keywords["id"].cast(IntegerType()))
+df_keywords.printSchema()
+
+# COMMAND ----------
+
+from pyspark.sql.functions import col, isnull
+
+# Get a list of all the column names
+column_names = df_keywords.columns
+
+# Initialize a dictionary to store the counts of empty values
+empty_values_counts = {}
+
+# Iterate through the list of column names
+for column_name in column_names:
+    # Count the number of empty values in each column
+    empty_values_count = df_keywords.filter(isnull(col(column_name))).count()
+    # Add the count of empty values for each column to the dictionary
+    empty_values_counts[column_name] = empty_values_count
+    
+# Iterate through the key-value pairs in the dictionary
+for column_name, empty_values_count in empty_values_counts.items():
+    # Print the column name and count of empty values
+    print(f"Column '{column_name}' has {empty_values_count} empty values")
+
+# COMMAND ----------
+
+# # df_keywords = df_keywords.dropna(how = 'any')
+# from pyspark.sql.functions import col
+# df_keywords = df_keywords.filter(df_keywords["id"].isNotNull())
+
+# COMMAND ----------
+
+# df_keywords = df_keywords.filter(col("keywords") != "[]")
+from pyspark.sql.functions import when
+df_keywords=df_keywords.withColumn('keywords',when(col('keywords')=='[]',"[{'id': 0, 'name': 'Unknown'}]").otherwise(col('keywords')))
+
+# COMMAND ----------
+
+# from pyspark.sql.functions import regexp_replace
+# # Remplacer les guillemets par des espaces vides dans la colonne 'value'
+# df_keywords = df_keywords.withColumn('keywords', regexp_replace('keywords', '"[', ''))
+# # df_keywords = df_keywords.withColumn('keywords', regexp_replace(df_keywords.keywords, '"[', '')
+from pyspark.sql.functions import *
+df_keywords = df_keywords.filter(~df_keywords.keywords.like("%}"))
+
+# COMMAND ----------
+
+display(df_keywords)
+
+# COMMAND ----------
+
+# df_keywords = df_keywords.withColumn("id", df_keywords["id"].cast(StringType()))
+
+# COMMAND ----------
+
+from pyspark.sql.types import StructType,StringType,IntegerType,MapType,ArrayType,StructField
+
+
+schema = ArrayType(StructType([
+        StructField('id', IntegerType(), nullable=False), 
+        StructField('name', StringType(), nullable=False)]))
+
+convertUDF = udf(lambda s: ','.join(map(str, s)),StringType())
+
+df=df_keywords.withColumn("name",convertUDF(from_json(df_keywords.keywords,schema).getField("name"))).withColumn("id_name",convertUDF(from_json(df_keywords.keywords,schema).getField("id")))
+
+df.select("name","id_name").show(10,False)
+
+# COMMAND ----------
+
+df.show()
+
+# COMMAND ----------
+
+from pyspark.sql.functions import split
+
+df = df.withColumn("name", split("name", ",")).withColumn("id_name", split("id_name", ","))
+df.show()
+
+# COMMAND ----------
+
+display(df)
+
+# COMMAND ----------
+
+display(test)
+
+# COMMAND ----------
+
+df_keywordsCOLLECT = df_keywords.collect()
+
+# COMMAND ----------
+
+# looping thorough each row of the dataframe
+for row in df_keywordsCOLLECT:
+    # while looping through each
+    # row printing the data of Id, Name and City
+    print(row["keywords"])
