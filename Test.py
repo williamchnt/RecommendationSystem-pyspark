@@ -138,11 +138,40 @@ df_keywords = df_keywords.filter(~df_keywords.keywords.like("%}"))
 
 # COMMAND ----------
 
-display(df_keywords)
+df_keywords.printSchema()
+df_keywords.show()
 
 # COMMAND ----------
 
 # df_keywords = df_keywords.withColumn("id", df_keywords["id"].cast(StringType()))
+
+# COMMAND ----------
+
+# from pyspark.sql.functions import explode, map
+
+# # Create a new DataFrame with two columns, "key" and "value", by
+# # exploding the "azerty" column and mapping each dictionary to its
+# # key-value pairs
+# df_keys_values = df.withColumn("key_value", explode(map(lambda x: x.items(), df["azerty"])))
+
+# # Split the "key_value" column into two columns: "key" and "value"
+# df_keys_values = df_keys_values.select("key_value.*")
+
+
+# COMMAND ----------
+
+# from pyspark.sql.functions import pandas_udf, PandasUDFType
+
+# # Define a function that takes in a pandas DataFrame and returns a
+# # new DataFrame with the keys and values from the "azerty" column
+# @pandas_udf("key string, value string", PandasUDFType.GROUPED_MAP)
+# def extract_keys_values(df):
+#     return df["azerty"].apply(pd.Series).stack().reset_index(level=1, drop=True)
+
+# # Use the "extract_keys_values" function to create a new DataFrame
+# # with the keys and values from the "azerty" column
+# df_keys_values = df.groupby().apply(extract_keys_values)
+
 
 # COMMAND ----------
 
@@ -165,18 +194,10 @@ df.show()
 
 # COMMAND ----------
 
-from pyspark.sql.functions import split
+# from pyspark.sql.functions import split
 
-df = df.withColumn("name", split("name", ",")).withColumn("id_name", split("id_name", ","))
-df.show()
-
-# COMMAND ----------
-
-display(df)
-
-# COMMAND ----------
-
-display(test)
+# df = df.withColumn("name", split("name", ",")).withColumn("id_name", split("id_name", ","))
+# df.show()
 
 # COMMAND ----------
 
