@@ -82,7 +82,7 @@ def read_movies_data(data):
     df=spark.read.option("header",True).csv(f"dbfs:/FileStore/shared_uploads/mohamed.zenati@securitasdirect.fr/{data}.csv")
     return df
     
-display(read_movies_data("keywords"))
+# display(read_movies_data("keywords"))
 df_keywords = read_movies_data("keywords")
 df_keywords.show()
 
@@ -143,6 +143,18 @@ df_keywords.show()
 
 # COMMAND ----------
 
+# df = df_keywords.withColumn("keywords", split(df_keywords["keywords"], ","))
+
+# COMMAND ----------
+
+# df = df_keywords.withColumn("dict", explode("keywords")).withColumn("dict", from_json("dict", "map<string,string>"))
+
+# COMMAND ----------
+
+# df.show()
+
+# COMMAND ----------
+
 # df_keywords = df_keywords.withColumn("id", df_keywords["id"].cast(StringType()))
 
 # COMMAND ----------
@@ -187,6 +199,27 @@ convertUDF = udf(lambda s: ','.join(map(str, s)),StringType())
 df=df_keywords.withColumn("name",convertUDF(from_json(df_keywords.keywords,schema).getField("name"))).withColumn("id_name",convertUDF(from_json(df_keywords.keywords,schema).getField("id")))
 
 df.select("name","id_name").show(10,False)
+
+# COMMAND ----------
+
+df.printSchema()
+df.show()
+
+# COMMAND ----------
+
+df = df.drop(col("keywords"))
+df.show()
+
+# COMMAND ----------
+
+df.printSchema()
+
+# COMMAND ----------
+
+import pyspark
+split_col = pyspark.sql.functions.split(df['name'], ',')
+df = df.withColumn('NAME1', split_col.getItem(0))
+df = df.withColumn('NAME2', split_col.getItem(1))
 
 # COMMAND ----------
 
