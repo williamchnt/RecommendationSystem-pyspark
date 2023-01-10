@@ -216,14 +216,40 @@ df.printSchema()
 
 # COMMAND ----------
 
-import pyspark
-split_col = pyspark.sql.functions.split(df['name'], ',')
-df = df.withColumn('NAME1', split_col.getItem(0))
-df = df.withColumn('NAME2', split_col.getItem(1))
+df = df.withColumn("name", split(df["name"], ","))
 
 # COMMAND ----------
 
+# add a new column to count the number of words
+df = df.withColumn("word_count", size(df.name))
 df.show()
+# filter the rows that contain the most words
+# df = df.filter(df.word_count == df.select(max(df.word_count)).first()[0])
+
+# group the rows by the number of words
+# grouped_df = df.groupBy(df.word_count).count()
+
+# convert the PySpark DataFrame to a pandas DataFrame
+# pandas_df = grouped_df.toPandas()
+
+# create the graph using the pandas plot method
+# pandas_df.plot(kind='bar', x='word_count', y='count', rot=0)
+
+
+# COMMAND ----------
+
+df.printSchema()
+
+# COMMAND ----------
+
+# import pyspark
+# split_col = pyspark.sql.functions.split(df['name'], ',')
+# df = df.withColumn('NAME1', split_col.getItem(0))
+# df = df.withColumn('NAME2', split_col.getItem(1))
+
+# COMMAND ----------
+
+# df.show()
 
 # COMMAND ----------
 
@@ -234,12 +260,40 @@ df.show()
 
 # COMMAND ----------
 
-df_keywordsCOLLECT = df_keywords.collect()
+# df_keywordsCOLLECT = df_keywords.collect()
 
 # COMMAND ----------
 
-# looping thorough each row of the dataframe
-for row in df_keywordsCOLLECT:
-    # while looping through each
-    # row printing the data of Id, Name and City
-    print(row["keywords"])
+# # looping thorough each row of the dataframe
+# for row in df_keywordsCOLLECT:
+#     # while looping through each
+#     # row printing the data of Id, Name and City
+#     print(row["keywords"])
+
+# COMMAND ----------
+
+df_credits = read_movies_data("credits")
+display(df_credits)
+
+# COMMAND ----------
+
+df_links_small = read_movies_data("links_small")
+display(df_links_small)
+
+# COMMAND ----------
+
+df_ratings_small = read_movies_data("ratings_small")
+display(df_ratings_small)
+
+# COMMAND ----------
+
+df_movies_metadata = read_movies_data("movies_metadata")
+display(df_movies_metadata)
+
+# COMMAND ----------
+
+
+
+# COMMAND ----------
+
+
