@@ -289,11 +289,105 @@ display(df_ratings_small)
 
 df_movies_metadata = read_movies_data("movies_metadata")
 display(df_movies_metadata)
+rows = df_movies_metadata.count()
+print(f"DataFrame Rows count : {rows}")
 
 # COMMAND ----------
 
+df_movies_metadata = df_movies_metadata.drop("video","adult","belongs_to_collection","homepage", "original_language", "overview", "poster_path", "production_companies", "production_countries", "spoken_languages", "status", "tagline")
+rows = df_movies_metadata.count()
+print(f"DataFrame Rows count : {rows}")
+
+# COMMAND ----------
+
+display(df_movies_metadata)
+df_movies_metadata.printSchema()
+
+# COMMAND ----------
+
+from pyspark.sql.types import IntegerType, DoubleType
+def change_type(dataframe, column, types):
+  dataframe = dataframe.withColumn(column, dataframe[column].cast(types()))
+  return dataframe
+
+# COMMAND ----------
+
+# df_movies_metadata = df_movies_metadata.withColumn("id", df_keywords["id"].cast(IntegerType()))
+df_movies_metadata = change_type(df_movies_metadata, "budget", IntegerType)
+df_movies_metadata = change_type(df_movies_metadata, "id", IntegerType)
+df_movies_metadata = change_type(df_movies_metadata, "popularity", DoubleType)
+df_movies_metadata = change_type(df_movies_metadata, "revenue", IntegerType)
+df_movies_metadata = change_type(df_movies_metadata, "runtime", DoubleType)
+df_movies_metadata = change_type(df_movies_metadata, "vote_average", DoubleType)
+df_movies_metadata = change_type(df_movies_metadata, "vote_count", IntegerType)
+df_movies_metadata.printSchema()
+
+# COMMAND ----------
+
+# df_movies_metadata = df_movies_metadata.withColumn("budget", df_movies_metadata["budget"].cast(IntegerType()))
+rows = df_movies_metadata.count()
+print(f"DataFrame Rows count : {rows}")
+
+# COMMAND ----------
+
+display(df_movies_metadata)
+
+# COMMAND ----------
+
+from pyspark.sql.functions import col,isnan,when,count
+df2 = df_movies_metadata.select([count(when(col(c).contains('None') | \
+                            col(c).contains('NULL') | \
+                            (col(c) == '' ) | \
+                            (col(c) == '[]' ) | \
+                            col(c).isNull() | \
+                            isnan(c), c 
+                           )).alias(c)
+                    for c in df_movies_metadata.columns])
+df2.show()
 
 
 # COMMAND ----------
 
+from pyspark.sql.functions import when, lit
+df_movies_metadata = df_movies_metadata.withColumn('budget', when(df_movies_metadata.budget.isNull(), lit('Unknown')).otherwise(df_movies_metadata.budget))
+df_movies_metadata = df_movies_metadata.withColumn("genres", when(df_movies_metadata["genres"] == "[]", "Unknown").otherwise(df_movies_metadata["genres"]))
+df_movies_metadata = df_movies_metadata.withColumn("original_title", when(df_movies_metadata["original_title"] == "[]", "Unknown").otherwise(df_movies_metadata["original_title"]))
+df_movies_metadata = df_movies_metadata.withColumn("title", when(df_movies_metadata["title"] == "[]", "Unknown").otherwise(df_movies_metadata["title"]))
+df_movies_metadata = df_movies_metadata.withColumn('id', when(df_movies_metadata.id.isNull(), lit('Unknown')).otherwise(df_movies_metadata.id))
+df_movies_metadata = df_movies_metadata.withColumn('imdb_id', when(df_movies_metadata.imdb_id.isNull(), lit('Unknown')).otherwise(df_movies_metadata.imdb_id))
+df_movies_metadata = df_movies_metadata.withColumn('popularity', when(df_movies_metadata.popularity.isNull(), lit('Unknown')).otherwise(df_movies_metadata.popularity))
+df_movies_metadata = df_movies_metadata.withColumn('release_date', when(df_movies_metadata.release_date.isNull(), lit('Unknown')).otherwise(df_movies_metadata.release_date))
+df_movies_metadata = df_movies_metadata.withColumn('revenue', when(df_movies_metadata.revenue.isNull(), lit('Unknown')).otherwise(df_movies_metadata.revenue))
+df_movies_metadata = df_movies_metadata.withColumn('vote_average', when(df_movies_metadata.vote_average.isNull(), lit('Unknown')).otherwise(df_movies_metadata.vote_average))
+df_movies_metadata = df_movies_metadata.withColumn('vote_count', when(df_movies_metadata.vote_count.isNull(), lit('Unknown')).otherwise(df_movies_metadata.vote_count))
+df_movies_metadata = df_movies_metadata.withColumn('runtime', when(df_movies_metadata.runtime.isNull(), lit('Unknown')).otherwise(df_movies_metadata.runtime))
 
+# df_movies_metadata = df_movies_metadata.withColumn('genres', when(df_movies_metadata.budget == '[]', lit('test')).otherwise(df_movies_metadata.budget))
+# df_movies_metadata = df_movies_metadata.withColumn('id', when(df_movies_metadata.budget.isNull(), lit('0')).otherwise(df_movies_metadata.budget))
+# df_movies_metadata = df_movies_metadata.withColumn('original_title', when(df_movies_metadata.budget.isNull(), lit('0')).otherwise(df_movies_metadata.budget))
+# df_movies_metadata = df_movies_metadata.withColumn('imdb_id', when(df_movies_metadata.budget.isNull(), lit('0')).otherwise(df_movies_metadata.budget))
+# df_movies_metadata = df_movies_metadata.withColumn('popularity', when(df_movies_metadata.budget.isNull(), lit('0')).otherwise(df_movies_metadata.budget))
+# df_movies_metadata = df_movies_metadata.withColumn('revenue', when(df_movies_metadata.budget.isNull(), lit('0')).otherwise(df_movies_metadata.budget))
+# df_movies_metadata = df_movies_metadata.withColumn('runtime', when(df_movies_metadata.budget.isNull(), lit('0')).otherwise(df_movies_metadata.budget))
+# df_movies_metadata = df_movies_metadata.withColumn('title', when(df_movies_metadata.budget.isNull(), lit('0')).otherwise(df_movies_metadata.budget))
+# df_movies_metadata = df_movies_metadata.withColumn('vote_average', when(df_movies_metadata.budget.isNull(), lit('0')).otherwise(df_movies_metadata.budget))
+# df_movies_metadata = df_movies_metadata.withColumn('vote_count', when(df_movies_metadata.budget.isNull(), lit('0')).otherwise(df_movies_metadata.budget))
+rows = df_movies_metadata.count()
+print(f"DataFrame Rows count : {rows}")
+
+# COMMAND ----------
+
+display(df_movies_metadata)
+
+# COMMAND ----------
+
+from pyspark.sql.functions import col,isnan,when,count
+df2 = df_movies_metadata.select([count(when(col(c).contains('None') | \
+                            col(c).contains('NULL') | \
+                            (col(c) == '' ) | \
+                            (col(c) == '[]' ) | \
+                            col(c).isNull() | \
+                            isnan(c), c 
+                           )).alias(c)
+                    for c in df_movies_metadata.columns])
+df2.show()
