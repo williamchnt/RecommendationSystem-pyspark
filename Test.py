@@ -117,12 +117,6 @@ for column_name, empty_values_count in empty_values_counts.items():
 
 # COMMAND ----------
 
-# # df_keywords = df_keywords.dropna(how = 'any')
-# from pyspark.sql.functions import col
-# df_keywords = df_keywords.filter(df_keywords["id"].isNotNull())
-
-# COMMAND ----------
-
 # df_keywords = df_keywords.filter(col("keywords") != "[]")
 from pyspark.sql.functions import when
 df_keywords=df_keywords.withColumn('keywords',when(col('keywords')=='[]',"[{'id': 0, 'name': 'Unknown'}]").otherwise(col('keywords')))
@@ -143,47 +137,44 @@ df_keywords.show()
 
 # COMMAND ----------
 
-# df = df_keywords.withColumn("keywords", split(df_keywords["keywords"], ","))
+print(df_keywords.select("keywords").first()[0])
 
 # COMMAND ----------
 
-# df = df_keywords.withColumn("dict", explode("keywords")).withColumn("dict", from_json("dict", "map<string,string>"))
+from pyspark.sql.functions import from_json, col
+from pyspark.sql.types import ArrayType, StructType, StructField, StringType
+
+# Define the schema for the struct type
+json_schema = ArrayType(StructType([
+    StructField("id", StringType()),
+    StructField("name", StringType()),
+    # Add additional fields as needed
+]))
+
+# Convert the "keywords" column from string to struct type using the defined schema
+df_keywords = df_keywords.withColumn("keywords", from_json(col("keywords"), json_schema))
+df_keywords.show()
 
 # COMMAND ----------
 
-# df.show()
+from pyspark.sql.functions import explode
+
+# Assuming your dataframe is named 'df' and the column containing the list of dictionaries is named 'column_name'
+df_keywords = df_keywords.selectExpr("*", "explode(keywords) as e").selectExpr("*", "e.*")
+df_keywords.show()
 
 # COMMAND ----------
 
-# df_keywords = df_keywords.withColumn("id", df_keywords["id"].cast(StringType()))
+display(df_keywords)
 
 # COMMAND ----------
 
-# from pyspark.sql.functions import explode, map
-
-# # Create a new DataFrame with two columns, "key" and "value", by
-# # exploding the "azerty" column and mapping each dictionary to its
-# # key-value pairs
-# df_keys_values = df.withColumn("key_value", explode(map(lambda x: x.items(), df["azerty"])))
-
-# # Split the "key_value" column into two columns: "key" and "value"
-# df_keys_values = df_keys_values.select("key_value.*")
-
+pandasDF = df_keywords.toPandas()
+pandasDF
 
 # COMMAND ----------
 
-# from pyspark.sql.functions import pandas_udf, PandasUDFType
-
-# # Define a function that takes in a pandas DataFrame and returns a
-# # new DataFrame with the keys and values from the "azerty" column
-# @pandas_udf("key string, value string", PandasUDFType.GROUPED_MAP)
-# def extract_keys_values(df):
-#     return df["azerty"].apply(pd.Series).stack().reset_index(level=1, drop=True)
-
-# # Use the "extract_keys_values" function to create a new DataFrame
-# # with the keys and values from the "azerty" column
-# df_keys_values = df.groupby().apply(extract_keys_values)
-
+display(pandasDF)
 
 # COMMAND ----------
 
@@ -222,6 +213,8 @@ df = df.withColumn("name", split(df["name"], ","))
 
 # add a new column to count the number of words
 df = df.withColumn("word_count", size(df.name))
+df = df.drop(col("name"))
+df = df.drop(col("id_name"))
 df.show()
 # filter the rows that contain the most words
 # df = df.filter(df.word_count == df.select(max(df.word_count)).first()[0])
@@ -235,6 +228,12 @@ df.show()
 # create the graph using the pandas plot method
 # pandas_df.plot(kind='bar', x='word_count', y='count', rot=0)
 
+
+# COMMAND ----------
+
+spark.conf.set("spark.sql.execution.arrow.pyspark.enabled", "false")
+pandasDF = df.toPandas()
+pandasDF
 
 # COMMAND ----------
 
