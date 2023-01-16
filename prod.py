@@ -129,7 +129,7 @@ plt.show()
 
 rows = df_sorted.count()
 print(f"DataFrame Rows count : {rows}")
-df_sorted.show(167387)
+df_sorted.show(10)
 
 # COMMAND ----------
 
@@ -184,3 +184,29 @@ from pyspark.sql.functions import to_timestamp
 df_ratings_small = df_ratings_small.withColumn("timestamp", to_timestamp(df_ratings_small["timestamp"], "yyyy-MM-dd HH:mm:ss"))
 df_ratings_small.printSchema()
 df_ratings_small.show()
+
+# COMMAND ----------
+
+df_movies_metadata = read_movies_data("movies_metadata")
+countRows(df_movies_metadata)
+display(df_movies_metadata)
+
+# COMMAND ----------
+
+df_movies_metadata = df_movies_metadata.drop("video","adult","belongs_to_collection","homepage", "original_language", "overview", "poster_path", "production_companies", "production_countries", "spoken_languages", "status", "tagline", "release_date", "revenue", "title", "genres")
+df_movies_metadata.printSchema()
+display(df_movies_metadata)
+
+# COMMAND ----------
+
+from pyspark.sql.functions import *
+df_movies_metadata = df_movies_metadata.withColumn("imdb_id", regexp_replace(col("imdb_id"), "tt", ""))
+display(df_movies_metadata)
+
+# COMMAND ----------
+
+
+
+# COMMAND ----------
+
+
