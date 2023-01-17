@@ -13,13 +13,13 @@ def read_movies_data(data):
     
 # display(read_movies_data("keywords"))
 df_keywords = read_movies_data("keywords")
-df_keywords = df_keywords.withColumnRenamed("id", "id_keywords")
+df_keywords = df_keywords.withColumnRenamed("id", "id_global")
 df_keywords.show()
 
 # COMMAND ----------
 
 from pyspark.sql.types import IntegerType
-df_keywords = df_keywords.withColumn("id_keywords", df_keywords["id_keywords"].cast(IntegerType()))
+df_keywords = df_keywords.withColumn("id_global", df_keywords["id_global"].cast(IntegerType()))
 df_keywords.printSchema()
 
 def countRows(data_movie):
@@ -94,8 +94,10 @@ from pyspark.sql.functions import explode
 
 # Assuming your dataframe is named 'df' and the column containing the list of dictionaries is named 'column_name'
 df_keywords = df_keywords.selectExpr("*", "explode(keywords) as e").selectExpr("*", "e.*")
-columns_to_drop = ["keywords", "e", "id"]
+columns_to_drop = ["keywords", "e"]
 df_keywords = df_keywords.select([c for c in df_keywords.columns if c not in columns_to_drop])
+df_keywords = df_keywords.withColumnRenamed("name", "keywords_name")
+df_keywords = df_keywords.withColumnRenamed("id", "keywords_id")
 df_keywords.show()
 
 # COMMAND ----------
@@ -108,7 +110,7 @@ print(f"DataFrame Rows count : {rows}")
 
 import matplotlib.pyplot as plt
 # Group the DataFrame by ID and count the number of keywords for each ID
-df_grouped = df_keywords.groupBy("id_keywords").count()
+df_grouped = df_keywords.groupBy("id_global").count()
 
 # Sort the grouped DataFrame in descending order of count
 df_sorted = df_grouped.sort(col("count").desc())
@@ -118,7 +120,7 @@ df_sorted = df_grouped.sort(col("count").desc())
 df_head = df_sorted.limit(5).collect()
 # df_head = df_sorted.head(10)
 # Print the ID with the most keywords
-df_head = [(row['id_keywords'], row['count']) for row in df_head]
+df_head = [(row['id_global'], row['count']) for row in df_head]
 # Plot the pie chart
 labels, values = zip(*df_head)
 plt.pie(values, labels=labels, autopct='%1.1f%%')
@@ -182,18 +184,41 @@ df_ratings_small.show()
 from pyspark.sql.functions import to_timestamp
 
 df_ratings_small = df_ratings_small.withColumn("timestamp", to_timestamp(df_ratings_small["timestamp"], "yyyy-MM-dd HH:mm:ss"))
+df_ratings_small = df_ratings_small.drop("timestamp")
 df_ratings_small.printSchema()
 df_ratings_small.show()
+
+
+# COMMAND ----------
+
+df_mean = df_ratings_small.drop("userId")
+df_mean.show()
+
+# COMMAND ----------
+
+from pyspark.sql.functions import mean
+
+# group the dataframe by movieID and calculate the mean of the ratings
+df_mean = df_mean.groupBy("movieId").mean("rating")
+
+# # rename the mean column to "avg_rating"
+df_mean = df_mean.withColumnRenamed("avg(rating)", "avg_rating")
+df_mean.show()
+# # join the original dataframe with the mean dataframe on movieID
+# df_ratings_small = df_ratings_small.drop("rating")
+# df_ratings_small = df_ratings_small.join(df_mean, "movieID")
+# df_ratings_small.show()
 
 # COMMAND ----------
 
 df_movies_metadata = read_movies_data("movies_metadata")
+df_movies_metadata = df_movies_metadata.withColumnRenamed("id", "id_global")
 countRows(df_movies_metadata)
 display(df_movies_metadata)
 
 # COMMAND ----------
 
-df_movies_metadata = df_movies_metadata.drop("video","adult","belongs_to_collection","homepage", "original_language", "overview", "poster_path", "production_companies", "production_countries", "spoken_languages", "status", "tagline", "release_date", "revenue", "title", "genres")
+df_movies_metadata = df_movies_metadata.drop("video", "belongs_to_collection", "adult","homepage", "original_language", "overview", "poster_path", "production_companies", "production_countries", "spoken_languages", "status", "tagline", "release_date", "revenue", "title")
 df_movies_metadata.printSchema()
 display(df_movies_metadata)
 
@@ -205,8 +230,99 @@ display(df_movies_metadata)
 
 # COMMAND ----------
 
+from pyspark.sql.functions import from_json, col
+from pyspark.sql.types import ArrayType, StructType, StructField, StringType
 
+# Define the schema for the struct type
+json_schema = ArrayType(StructType([
+    StructField("id", StringType()),
+    StructField("name", StringType()),
+    # Add additional fields as needed
+]))
+
+# Convert the "keywords" column from string to struct type using the defined schema
+df_movies_metadata = df_movies_metadata.withColumn("genres", from_json(col("genres"), json_schema))
+df_movies_metadata.printSchema()
+df_movies_metadata.show()
 
 # COMMAND ----------
 
+from pyspark.sql.functions import explode
 
+# Assuming your dataframe is named 'df' and the column containing the list of dictionaries is named 'column_name'
+df_movies_metadata = df_movies_metadata.selectExpr("*", "explode(genres) as f").selectExpr("*", "f.*")
+columns_to_drop = ["genres", "f"]
+df_movies_metadata = df_movies_metadata.select([c for c in df_movies_metadata.columns if c not in columns_to_drop])
+df_movies_metadata = df_movies_metadata.withColumnRenamed("name", "gender_name")
+df_movies_metadata = df_movies_metadata.withColumnRenamed("id", "gender_id")
+df_movies_metadata = df_movies_metadata.withColumnRenamed("imdb_id", "imdbid")
+df_movies_metadata.printSchema()
+df_movies_metadata.show()
+
+# COMMAND ----------
+
+# Define the columns to convert
+cols_to_convert = ["budget", "id_global", "imdb_id", "vote_count", "id"]
+
+# Define the function to convert to string format
+convert_to_string = lambda x: x.cast("integer")
+
+# Convert the columns to string format
+df_movies_metadata = df_movies_metadata.select([convert_to_string(col(c)).alias(c) if c in cols_to_convert else c for c in df_movies_metadata.columns])
+df_movies_metadata.printSchema()
+df_movies_metadata.show()
+
+# COMMAND ----------
+
+# Define the columns to convert
+cols_to_convert = ["popularity", "runtime", "vote_average"]
+
+# Define the function to convert to string format
+convert_to_string = lambda x: x.cast("double")
+
+# Convert the columns to string format
+df_movies_metadata = df_movies_metadata.select([convert_to_string(col(c)).alias(c) if c in cols_to_convert else c for c in df_movies_metadata.columns])
+df_movies_metadata.printSchema()
+df_movies_metadata.show()
+
+# COMMAND ----------
+
+EmptyRows(df_movies_metadata).show()
+rows = df_movies_metadata.count()
+print(f"DataFrame Rows count : {rows}")
+
+# COMMAND ----------
+
+movielens = df_movies_metadata.join(df_keywords,["id_global"],"left")
+movielens.show()
+
+# COMMAND ----------
+
+display(movielens)
+
+# COMMAND ----------
+
+movielens = df_movies_metadata.join(df_links_small,["imdbid"])
+movielens.show()
+
+# COMMAND ----------
+
+movielens = movielens.join(df_mean,["movieId"])
+movielens.show()
+
+# COMMAND ----------
+
+# movielens.write.csv("dbfs:/FileStore/shared_uploads/mohamed.zenati@securitasdirect.fr/movies_data_final.csv", header=True)
+pdf = movielens.toPandas()
+
+# Write the Pandas DataFrame to a CSV file
+pdf.to_csv("/dbfs/FileStore/shared_uploads/mohamed.zenati@securitasdirect.fr/tp/movies_data_final.csv", index=False)
+
+# COMMAND ----------
+
+# df_ratings_small.write.csv("dbfs:/FileStore/shared_uploads/mohamed.zenati@securitasdirect.fr/rating_final.csv", header=True)
+# movielens.write.csv("dbfs:/FileStore/shared_uploads/mohamed.zenati@securitasdirect.fr/movies_data_final.csv", header=True)
+pdf = df_ratings_small.toPandas()
+
+# Write the Pandas DataFrame to a CSV file
+pdf.to_csv("/dbfs/FileStore/shared_uploads/mohamed.zenati@securitasdirect.fr/tp/ratings_small_final.csv", index=False)
