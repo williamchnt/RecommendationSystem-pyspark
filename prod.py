@@ -312,6 +312,10 @@ movielens.show()
 
 # COMMAND ----------
 
+display(df_ratings_small)
+
+# COMMAND ----------
+
 # movielens.write.csv("dbfs:/FileStore/shared_uploads/mohamed.zenati@securitasdirect.fr/movies_data_final.csv", header=True)
 pdf = movielens.toPandas()
 
