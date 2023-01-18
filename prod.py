@@ -313,7 +313,7 @@ display(df_movies_metadata)
 
 # COMMAND ----------
 
-df_movies_metadata = df_movies_metadata.drop("video", "belongs_to_collection", "adult","homepage", "original_language", "overview", "poster_path", "production_companies", "production_countries", "spoken_languages", "status", "tagline", "release_date", "revenue", "title")
+df_movies_metadata = df_movies_metadata.drop("video", "belongs_to_collection", "adult","homepage", "original_language", "overview", "poster_path", "production_companies", "production_countries", "spoken_languages", "status", "tagline", "release_date", "title")
 df_movies_metadata.printSchema()
 display(df_movies_metadata)
 
@@ -357,7 +357,7 @@ df_movies_metadata.show()
 # COMMAND ----------
 
 # Define the columns to convert
-cols_to_convert = ["budget", "id_global", "imdb_id", "vote_count", "id"]
+cols_to_convert = ["budget", "id_global", "imdb_id", "vote_count", "id", "revenue"]
 
 # Define the function to convert to string format
 convert_to_string = lambda x: x.cast("integer")
