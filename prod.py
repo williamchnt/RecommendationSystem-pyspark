@@ -140,6 +140,94 @@ display(df_credits)
 
 # COMMAND ----------
 
+from pyspark.sql.functions import from_json, col
+from pyspark.sql.types import ArrayType, StructType, StructField, StringType
+
+# Define the schema for the struct type
+json_schema = ArrayType(StructType([
+    StructField("character", StringType()),
+    StructField("name", StringType()),
+    # Add additional fields as needed
+]))
+
+# Convert the "keywords" column from string to struct type using the defined schema
+df_credits = df_credits.withColumn("cast", from_json(col("cast"), json_schema))
+df_credits.printSchema()
+df_credits.show()
+
+# COMMAND ----------
+
+from pyspark.sql.functions import explode
+
+# Assuming your dataframe is named 'df' and the column containing the list of dictionaries is named 'column_name'
+df_credits = df_credits.selectExpr("*", "explode(cast) as e").selectExpr("*", "e.*")
+columns_to_drop = ["cast", "e"]
+df_credits = df_credits.select([c for c in df_credits.columns if c not in columns_to_drop])
+df_credits = df_credits.withColumnRenamed("character", "cast_character")
+df_credits = df_credits.withColumnRenamed("name", "cast_namer")
+df_credits.show()
+
+# COMMAND ----------
+
+from pyspark.sql.functions import from_json, col
+from pyspark.sql.types import ArrayType, StructType, StructField, StringType
+
+# Define the schema for the struct type
+json_schema = ArrayType(StructType([
+    StructField("job", StringType()),
+    StructField("name", StringType()),
+    # Add additional fields as needed
+]))
+
+# Convert the "keywords" column from string to struct type using the defined schema
+df_credits = df_credits.withColumn("crew", from_json(col("crew"), json_schema))
+df_credits.printSchema()
+df_credits.show()
+
+# COMMAND ----------
+
+from pyspark.sql.functions import explode
+
+# Assuming your dataframe is named 'df' and the column containing the list of dictionaries is named 'column_name'
+df_credits = df_credits.selectExpr("*", "explode(crew) as e").selectExpr("*", "e.*")
+columns_to_drop = ["crew", "e"]
+df_credits = df_credits.select([c for c in df_credits.columns if c not in columns_to_drop])
+df_credits = df_credits.withColumnRenamed("job", "crew_job")
+df_credits = df_credits.withColumnRenamed("name", "crew_namer")
+df_credits = df_credits.withColumnRenamed("id", "id_global")
+df_credits = df_credits.withColumn("id_global", df_credits["id_global"].cast(IntegerType()))
+df_credits.show()
+
+# COMMAND ----------
+
+display(df_credits)
+
+# COMMAND ----------
+
+EmptyRows(df_credits).show()
+
+# COMMAND ----------
+
+
+
+# COMMAND ----------
+
+
+
+# COMMAND ----------
+
+
+
+# COMMAND ----------
+
+
+
+# COMMAND ----------
+
+
+
+# COMMAND ----------
+
 df_links_small = read_movies_data("links_small")
 display(df_links_small)
 
@@ -191,23 +279,30 @@ df_ratings_small.show()
 
 # COMMAND ----------
 
-df_mean = df_ratings_small.drop("userId")
-df_mean.show()
+# df_mean = df_ratings_small.drop("userId")
+# df_mean.show()
 
 # COMMAND ----------
 
 from pyspark.sql.functions import mean
 
-# group the dataframe by movieID and calculate the mean of the ratings
-df_mean = df_mean.groupBy("movieId").mean("rating")
+df_ratings_small = df_ratings_small.groupBy("userId", "movieId").agg(mean("rating").alias("average_rating"))
+df_ratings_small.show()
 
-# # rename the mean column to "avg_rating"
-df_mean = df_mean.withColumnRenamed("avg(rating)", "avg_rating")
-df_mean.show()
-# # join the original dataframe with the mean dataframe on movieID
-# df_ratings_small = df_ratings_small.drop("rating")
-# df_ratings_small = df_ratings_small.join(df_mean, "movieID")
-# df_ratings_small.show()
+# COMMAND ----------
+
+# from pyspark.sql.functions import mean
+
+# # group the dataframe by movieID and calculate the mean of the ratings
+# df_mean = df_ratings_small.groupBy("movieId").mean("rating")
+
+# # # rename the mean column to "avg_rating"
+# df_mean = df_mean.withColumnRenamed("avg(rating)", "avg_rating")
+# df_mean.show()
+# # # join the original dataframe with the mean dataframe on movieID
+# # df_ratings_small = df_ratings_small.drop("rating")
+# # df_ratings_small = df_ratings_small.join(df_mean, "movieID")
+# # df_ratings_small.show()
 
 # COMMAND ----------
 
@@ -307,26 +402,42 @@ movielens.show()
 
 # COMMAND ----------
 
-movielens = movielens.join(df_mean,["movieId"])
-movielens.show()
+movielens2 = movielens.join(df_ratings_small,["movieId"])
 
 # COMMAND ----------
 
-display(df_ratings_small)
+display(movielens2)
+
+# COMMAND ----------
+
+movielens3 = movielens2.join(df_credits,["id_global"])
+
+# COMMAND ----------
+
+# movielens = movielens.join(df_mean,["movieId"])
+# movielens.show()
+
+# COMMAND ----------
+
+display(movielens3)
+
+# COMMAND ----------
+
+
 
 # COMMAND ----------
 
 # movielens.write.csv("dbfs:/FileStore/shared_uploads/mohamed.zenati@securitasdirect.fr/movies_data_final.csv", header=True)
-pdf = movielens.toPandas()
+pdf = movielens3.toPandas()
 
 # Write the Pandas DataFrame to a CSV file
-pdf.to_csv("/dbfs/FileStore/shared_uploads/mohamed.zenati@securitasdirect.fr/tp/movies_data_final.csv", index=False)
+pdf.to_csv("/dbfs/FileStore/shared_uploads/mohamed.zenati@securitasdirect.fr/tp/movies_final.csv", index=False)
 
 # COMMAND ----------
 
-# df_ratings_small.write.csv("dbfs:/FileStore/shared_uploads/mohamed.zenati@securitasdirect.fr/rating_final.csv", header=True)
-# movielens.write.csv("dbfs:/FileStore/shared_uploads/mohamed.zenati@securitasdirect.fr/movies_data_final.csv", header=True)
-pdf = df_ratings_small.toPandas()
+# # df_ratings_small.write.csv("dbfs:/FileStore/shared_uploads/mohamed.zenati@securitasdirect.fr/rating_final.csv", header=True)
+# # movielens.write.csv("dbfs:/FileStore/shared_uploads/mohamed.zenati@securitasdirect.fr/movies_data_final.csv", header=True)
+# pdf = df_ratings_small.toPandas()
 
-# Write the Pandas DataFrame to a CSV file
-pdf.to_csv("/dbfs/FileStore/shared_uploads/mohamed.zenati@securitasdirect.fr/tp/ratings_small_final.csv", index=False)
+# # Write the Pandas DataFrame to a CSV file
+# pdf.to_csv("/dbfs/FileStore/shared_uploads/mohamed.zenati@securitasdirect.fr/tp/ratings_small_final.csv", index=False)
