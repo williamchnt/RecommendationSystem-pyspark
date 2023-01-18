@@ -145,7 +145,7 @@ from pyspark.sql.types import ArrayType, StructType, StructField, StringType
 
 # Define the schema for the struct type
 json_schema = ArrayType(StructType([
-    StructField("character", StringType()),
+#     StructField("character", StringType()),
     StructField("name", StringType()),
     # Add additional fields as needed
 ]))
@@ -163,7 +163,7 @@ from pyspark.sql.functions import explode
 df_credits = df_credits.selectExpr("*", "explode(cast) as e").selectExpr("*", "e.*")
 columns_to_drop = ["cast", "e"]
 df_credits = df_credits.select([c for c in df_credits.columns if c not in columns_to_drop])
-df_credits = df_credits.withColumnRenamed("character", "cast_character")
+# df_credits = df_credits.withColumnRenamed("character", "cast_character")
 df_credits = df_credits.withColumnRenamed("name", "cast_namer")
 df_credits.show()
 
@@ -204,7 +204,20 @@ display(df_credits)
 
 # COMMAND ----------
 
-EmptyRows(df_credits).show()
+from pyspark.sql.functions import *
+
+# Assume your DataFrame is named "df"
+# df_credits = df_credits.groupBy("id_global","crew_namer","crew_job", "cast_namer").agg(concat_ws(",",collect_list("crew_namer")).alias("crew_namer"))
+df_credits = df_credits.groupBy("id_global","crew_job", "cast_namer", "crew_namer").pivot("crew_job").agg(first("crew_namer"))
+
+# COMMAND ----------
+
+display(df_credits)
+
+# COMMAND ----------
+
+df_credits = df_credits.drop("crew_namer", "crew_job")
+display(df_credits)
 
 # COMMAND ----------
 
