@@ -5,6 +5,11 @@ display(df)
 
 # COMMAND ----------
 
+rows = df.count()
+print(f"DataFrame Rows count : {rows}")
+
+# COMMAND ----------
+
 from pyspark.sql.functions import col
 from pyspark.sql.types import FloatType, IntegerType
 
@@ -83,6 +88,10 @@ EmptyRows(df).show()
 
 # COMMAND ----------
 
+
+
+# COMMAND ----------
+
 from pyspark.ml.feature import VectorAssembler
 from pyspark.ml.clustering import KMeans
 from pyspark.sql.functions import col
@@ -97,10 +106,10 @@ assembler = VectorAssembler(inputCols=["budget", "popularity", "vote_average"], 
 data = assembler.transform(data)
 
 #Split training and testing data
-train_data,test_data = data.randomSplit([0.6,0.4])
+train_data,test_data = data.randomSplit([0.8,0.2])
 
 # Entraînement du modèle de clustering k-means
-kmeans = KMeans(k=10, seed=1)
+kmeans = KMeans(k=5, seed=1)
 model = kmeans.fit(train_data)
 
 # Prédiction du cluster d'un film donné

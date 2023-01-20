@@ -246,10 +246,19 @@ display(df_links_small)
 
 # COMMAND ----------
 
+rows = df_links_small.count()
+print(f"DataFrame Rows count : {rows}")
+
+# COMMAND ----------
+
 df_ratings_small = read_movies_data("ratings_small")
 df_ratings_small.printSchema()
 countRows(df_ratings_small)
 df_ratings_small.show()
+
+# COMMAND ----------
+
+
 
 # COMMAND ----------
 
@@ -327,6 +336,7 @@ display(df_movies_metadata)
 # COMMAND ----------
 
 df_movies_metadata = df_movies_metadata.drop("video", "belongs_to_collection", "adult","homepage", "original_language", "overview", "poster_path", "production_companies", "production_countries", "spoken_languages", "status", "tagline", "release_date", "title")
+
 df_movies_metadata.printSchema()
 display(df_movies_metadata)
 
