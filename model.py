@@ -54,12 +54,14 @@ display(df)
 from pyspark.ml.regression import LinearRegression
 from pyspark.ml.feature import VectorAssembler
 
+data = df.select("movieId", "userId", "rating", "budget", "popularity", "revenue", "runtime", "vote_average", "vote_count", "gender_id")
+
 # Prepare data for model
 assembler = VectorAssembler(inputCols=["userId", "rating", "budget", "popularity", "movieId", "runtime", "vote_average", "vote_count", "gender_id"], outputCol="features")
-data = assembler.transform(df)
+data = assembler.transform(data)
 
 # Split data into training and test sets
-(trainingData, testData) = data.randomSplit([0.9, 0.1])
+(trainingData, testData) = data.randomSplit([0.8, 0.2])
 
 # Create linear regression model
 lr = LinearRegression(featuresCol="features", labelCol="revenue")
