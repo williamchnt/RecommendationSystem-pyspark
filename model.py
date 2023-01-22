@@ -136,6 +136,15 @@ top_similar_movies.show()
 
 # COMMAND ----------
 
+summary = model.summary
+tmp_scores = summary.trainingCost
+
+evaluator = ClusteringEvaluator()
+silhouette = evaluator.evaluate(predictions)
+silhouette
+
+# COMMAND ----------
+
 # Compute RMSE
 rmse = evaluator.evaluate(predictions)
 print("Root Mean Squared Error (RMSE) on test data = %g" % rmse)
